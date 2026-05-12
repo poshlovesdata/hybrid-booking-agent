@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worknoon AI Concierge</title>
+    <!-- ADD plugins=typography to the Tailwind script -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Feather Icons for minimalist UI elements -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    <!-- ADD Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FAFAFA;
+        }
+        /* Custom minimalist scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .typing-indicator span {
+            animation: blink 1.4s infinite both;
+            height: 6px;
+            width: 6px;
+            background-color: #94a3b8;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 1px;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink {
+            0% { opacity: 0.2; transform: scale(0.8); }
+            20% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0.2; transform: scale(0.8); }
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col text-slate-800 overflow-hidden bg-[#FAFAFA]">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-100 py-4 px-6 flex items-center justify-between shadow-sm z-10 flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white">
+                <i data-feather="box" class="w-4 h-4"></i>
+            </div>
+            <h1 class="text-lg font-semibold tracking-tight">Worknoon Concierge</h1>
+        </div>
+        <div class="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-1 rounded-full flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Live Agent
+        </div>
+    </header>
+
+    <!-- Chat Container -->
+    <main id="chat-container" class="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-6 max-w-4xl w-full mx-auto">
+        
+        <!-- Welcome Message -->
+        <div class="flex gap-4 max-w-[85%]">
+            <div class="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center flex-shrink-0 mt-1">
+                <i data-feather="cpu" class="w-4 h-4"></i>
+            </div>
+            <div class="bg-white border border-slate-100 p-4 rounded-2xl rounded-tl-sm shadow-sm">
+                <p class="text-sm leading-relaxed">Hi there! I'm your Worknoon AI Concierge. What kind of workspace are you looking for today? (e.g., "I need a quiet space in Ikeja for 4 people")</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Input Area -->
+    <div class="flex-shrink-0 bg-[#FAFAFA] border-t border-slate-200/50 pt-4 pb-6 px-4 w-full shadow-[0_-10px_40px_rgba(0,0,0,0.03)] z-10">
+        <div class="max-w-4xl mx-auto">
+            <form id="chat-form" class="relative flex items-center">
+                <input 
+                    type="text" 
+                    id="user-input"
+                    class="w-full bg-white border border-slate-200 shadow-sm rounded-full py-4 pl-6 pr-16 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                    placeholder="Describe your ideal workspace..."
+                    autocomplete="off"
+                >
+                <button 
+                    type="submit" 
+                    class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black text-white rounded-full flex items-center justify-center hover:bg-slate-800 transition-colors disabled:opacity-50"
+                    id="send-btn"
+                >
+                    <i data-feather="arrow-up" class="w-5 h-5"></i>
+                </button>
+            </form>
+            <div class="text-center mt-2">
+                <!-- <span class="text-[10px] text-slate-400 uppercase tracking-widest font-medium">Powered by PydanticAI & FastAPI</span> -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+
+        // DOM Elements
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const chatContainer = document.getElementById('chat-container');
+        const sendBtn = document.getElementById('send-btn');
+
+        // Configure Marked.js to respect single line breaks
+        marked.setOptions({ breaks: true });
+
+        // Generate a mock session ID for memory persistence during this browser tab session
+        const sessionId = "user_" + Math.random().toString(36).substr(2, 9);
+        const API_URL = "http://127.0.0.1:8000/api/search";
+
+        // Scroll to bottom helper
+        const scrollToBottom = () => {
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+        };
+
+        // Add User Message to UI
+        const appendUserMessage = (text) => {
+            const div = document.createElement('div');
+            div.className = "flex gap-4 max-w-[85%] self-end flex-row-reverse";
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 mt-1">
+                    <i data-feather="user" class="w-4 h-4 text-slate-600"></i>
+                </div>
+                <div class="bg-black text-white p-4 rounded-2xl rounded-tr-sm shadow-sm">
+                    <p class="text-sm leading-relaxed">${text}</p>
+                </div>
+            `;
+            chatContainer.appendChild(div);
+            feather.replace();
+            scrollToBottom();
+        };
+
+        // Show/Remove Typing Indicator
+        const showLoading = () => {
+            const div = document.createElement('div');
+            div.id = 'typing-indicator';
+            div.className = "flex gap-4 max-w-[85%]";
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center flex-shrink-0 mt-1">
+                    <i data-feather="cpu" class="w-4 h-4"></i>
+                </div>
+                <div class="bg-white border border-slate-100 p-4 rounded-2xl rounded-tl-sm shadow-sm flex items-center">
+                    <div class="typing-indicator flex items-center h-5">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(div);
+            feather.replace();
+            scrollToBottom();
+        };
+
+        const removeLoading = () => {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.remove();
+        };
+
+        // Add AI Message and Cards to UI
+        const appendAIMessage = (data) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = "flex gap-4 max-w-[95%]";
+            
+            // 1. Setup the AI Avatar
+            let html = `
+                <div class="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center flex-shrink-0 mt-1">
+                    <i data-feather="cpu" class="w-4 h-4"></i>
+                </div>
+                <div class="flex flex-col gap-3 w-full">
+            `;
+
+            // 2. Add the conversational text and parse the Markdown
+            const rawText = data.agent_message || data.agent_messge || "";
+            const parsedHTML = marked.parse(rawText);
+
+            // Use Tailwind's 'prose' classes to style the injected HTML beautifully
+            html += `
+                <div class="bg-white border border-slate-100 p-4 rounded-2xl rounded-tl-sm shadow-sm inline-block self-start prose prose-sm prose-slate max-w-none prose-p:leading-relaxed prose-p:my-1 prose-strong:font-semibold">
+                    ${parsedHTML}
+                </div>
+            `;
+
+            // 3. Render Workspace Cards if they exist
+            if (data.recommendations && data.recommendations.length > 0) {
+                html += `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">`;
+                
+                data.recommendations.forEach(space => {
+                    // Determine badges based on Phase (Discovery vs Booking)
+                    let statusBadge = space.availability_status === true 
+                        ? `<span class="bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] px-2 py-1 rounded-md font-semibold tracking-wide uppercase">Available</span>`
+                        : `<span class="bg-blue-50 text-blue-600 border border-blue-200 text-[10px] px-2 py-1 rounded-md font-semibold tracking-wide uppercase">Discovery Mode</span>`;
+                    
+                    let priceHtml = space.total_price 
+                        ? `<div class="text-sm font-bold text-slate-800">₦${space.total_price.toLocaleString()}<span class="text-xs font-normal text-slate-500 ml-1">Total</span></div>`
+                        : `<div class="text-sm font-bold text-slate-800">₦${space.price_per_hour.toLocaleString()}<span class="text-xs font-normal text-slate-500 ml-1">/hr</span></div>`;
+
+                    html += `
+                        <div class="bg-white border border-slate-200 p-5 rounded-xl hover:border-slate-300 transition-colors shadow-sm flex flex-col justify-between group">
+                            <div>
+                                <div class="flex justify-between items-start mb-3">
+                                    ${statusBadge}
+                                    ${priceHtml}
+                                </div>
+                                <h3 class="font-semibold text-slate-900 text-base mb-1">${space.name}</h3>
+                                <p class="text-xs text-slate-500 italic line-clamp-3 leading-relaxed">"${space.vibe_match_reason}"</p>
+                            </div>
+                            <button class="mt-4 w-full bg-slate-50 text-slate-700 hover:bg-black hover:text-white border border-slate-200 text-xs font-medium py-2 rounded-lg transition-colors">
+                                Select Space
+                            </button>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            html += `</div>`; // Close wrapper
+            wrapper.innerHTML = html;
+            chatContainer.appendChild(wrapper);
+            feather.replace();
+            scrollToBottom();
+        };
+
+        // Form Submit Handler
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            // Update UI
+            appendUserMessage(text);
+            userInput.value = '';
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+            showLoading();
+
+            try {
+                // Call FastAPI Backend
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        user_prompt: text
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Server returned " + response.status);
+                }
+
+                const data = await response.json();
+                removeLoading();
+                appendAIMessage(data);
+
+            } catch (error) {
+                console.error("Error calling API:", error);
+                removeLoading();
+                appendAIMessage({
+                    agent_message: "I'm having trouble connecting to the Worknoon routing engine. Please ensure the backend server is running.",
+                    recommendations: []
+                });
+            } finally {
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>

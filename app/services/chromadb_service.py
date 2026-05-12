@@ -14,9 +14,9 @@ def search_semantic_vibe(vibe_keywords: List[str], location: str, n_results: int
     """
     # If the LLM couldn't find any vibe keywords, return a wildcard search or empty list
     if not vibe_keywords:
-        return []
-
-    query_text = f"Looking for a space with: {', '.join(vibe_keywords)}"
+        query_text = "workspace office desk environment"
+    else:
+        query_text = f"Looking for a space with: {', '.join(vibe_keywords)}"
     
     # Execute the semantic search against ChromaDB
     results = collection.query(

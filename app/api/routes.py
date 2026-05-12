@@ -31,7 +31,18 @@ async def search_workspaces(request: ChatRequest):
         result = await agent.run(request.user_prompt, message_history=history)
         
         full_history = result.all_messages()
-        session_memory[request.session_id] = full_history[-10:]
+        
+        trimmed_history = full_history[-10:]
+        
+        while trimmed_history:
+            msg_str = str(trimmed_history[0])
+            if "ToolReturn" in msg_str or "ToolCall" in msg_str:
+                trimmed_history.pop(0) # Drop the unsafe message
+            else:
+                break 
+                
+        session_memory[request.session_id] = trimmed_history
+
         
         return result.output
     
