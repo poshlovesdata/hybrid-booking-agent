@@ -1,0 +1,24 @@
+services:
+  api:
+    build: .
+    container_name: hybrid-booking-agent
+    restart: unless-stopped
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    networks:
+      - web
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bookingagent.rule=Host(`api.poshlovesdata.dev`)"
+
+      - "traefik.http.routers.bookingagent.entrypoints=websecure"
+      - "traefik.http.routers.bookingagent.tls.certresolver=myresolver"
+      - "traefik.http.services.bookingagent.loadbalancer.server.port=8001"
+
+      - "traefik.http.middlewares.bookingagent-strip.stripprefix.prefixes=/bookingagent"
+      - "traefik.http.routers.bookingagent.middlewares=bookingagent-strip"
+
+networks:
+  web:
+    external: true
