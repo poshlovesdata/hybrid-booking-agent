@@ -16,6 +16,7 @@ class SearchIntent(BaseModel):
     req_capacity: Optional[int] = Field(default=1, description="Number of people needing the space")
     date: Optional[str] = Field(default=None, description="Requested date in YYYY-MM-DD format")
     start_time: Optional[str] = Field(default=None, description="Requested start time in HH:MM format")
+    end_time: Optional[str] = Field(default=None, description="Requested end time in HH:MM format")
     duration_hours: Optional[int] = Field(default=1, description="How many hours they need the space")
     vibe: List[str] = Field(default_factory=list, description="A list of keywords for the vibe/semantic search (e.g. 'quiet', 'coffee')")
     
