@@ -2,6 +2,9 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
 
+
+    
+
 class InventoryItem(BaseModel):
     """Represents a single bookable item (e.g., workspace, equipment)"""
     id: str
@@ -24,14 +27,15 @@ class WorkspaceRecommendation(BaseModel):
     """A single verified recommendation"""
     workspace_id: str
     name: str
-    total_price: float = Field(description="The exact total_price returned by the check_live_availability tool. DO NOT calculate this yourself.")
-    vibe_match_reason: str = Field(description="Brief explanation of why this space matches the user's vibe keywords")
-    availability_status: bool
+    price_per_hour: float | None = Field(default=None, description="The base hourly rate of the workspace.")
+    total_price: float | None = Field(description="The exact total_price returned by the check_live_availability tool. DO NOT calculate this yourself.")
+    vibe_match_reason: str = Field(description="Detailed explanation of why this space matches the user's vibe keywords")
+    availability_status: bool | None
 
 class FinalResponse(BaseModel):
     """The strict JSON output the AI must return to the frontend"""
     agent_messge: str = Field(description="A brief conversational reply summarizing the findings or explaining compromises")
-    recommendations: List[WorkspaceRecommendation] = Field(default_factory=list description="List of available spaces. Must be empty if none are available.")
+    recommendations: List[WorkspaceRecommendation] = Field(default_factory=list, description="List of available spaces. Must be empty if none are available.")
         
         
     

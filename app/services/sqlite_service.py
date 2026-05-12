@@ -3,7 +3,7 @@ from typing import List, Dict
 from loguru import logger
 
 
-DB_FILE = 'data/workspaces.db'
+DB_FILE = 'data/inventory.db'
 
 def get_db_connection():
     """Establish and return a connection to the local SQLite database."""
@@ -65,7 +65,7 @@ def check_live_availabilty(item_ids: List[str], start_time: str, duration_hours:
         w.id as workspace_id,
         w.name,
         w.price_per_hour,
-        (w.price_per_hour * ?) as total_price,
+        (w.price_per_hour * ?) as total_price
     FROM workspaces w
     WHERE w.id IN ({placeholders}) 
     AND w.base_capacity >= ?
@@ -91,6 +91,7 @@ def check_live_availabilty(item_ids: List[str], start_time: str, duration_hours:
         start_time, end_time_str
     )
     
+    
     cursor.execute(query, params)
     
     available_spaces = [ dict(row) for row in cursor.fetchall()]
@@ -98,3 +99,22 @@ def check_live_availabilty(item_ids: List[str], start_time: str, duration_hours:
     conn.close()
     
     return available_spaces
+
+def get_basic_workspace_details(item_ids: List[str]) -> List[Dict]:
+    """
+    Retrieves basic workspace info (name) without checking time availability.
+    Used for 'Discovery Mode' when the user hasn't provided dates yet.
+    """
+    if not item_ids:
+        return []
+        
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    placeholders = ','.join(['?'] * len(item_ids))
+    
+    query = f"SELECT id as workspace_id, name, price_per_hour FROM workspaces WHERE id IN ({placeholders})"
+    cursor.execute(query, tuple(item_ids))
+    details = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    return details
