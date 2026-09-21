@@ -52,6 +52,7 @@ def check_live_availabilty(item_ids: List[str], start_time: str, duration_hours:
     to filter out any that are already booked for the requested time.
     """
     if not item_ids:
+        logger.info("No matching workspace ids for availability check; returning empty list")
         return []
 
     conn = get_db_connection()
@@ -99,6 +100,12 @@ def check_live_availabilty(item_ids: List[str], start_time: str, duration_hours:
     available_spaces = [ dict(row) for row in cursor.fetchall()]
     
     conn.close()
+
+    if not available_spaces:
+        logger.info(
+            f"No available workspaces for date={requested_date} time={start_time} "
+            f"duration={duration_hours}h capacity={capacity_needed}"
+        )
     
     return available_spaces
 
