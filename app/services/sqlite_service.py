@@ -51,7 +51,9 @@ def check_live_availabilty(item_ids: List[str], start_time: str, duration_hours:
     Takes a list of semantically matched IDs and checks the live database 
     to filter out any that are already booked for the requested time.
     """
-    
+    if not item_ids:
+        return []
+
     conn = get_db_connection()
     cursor = conn.cursor()
     
