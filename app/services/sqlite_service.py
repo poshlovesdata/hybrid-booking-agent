@@ -58,8 +58,8 @@ def check_live_availabilty(item_ids: List[str], start_time: str, duration_hours:
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    start_hour = int(start_time.split(':')[0])
-    end_time_str = f"{start_hour + duration_hours:02d}:00"
+    start_hour, start_minute = map(int, start_time.split(':'))
+    end_time_str = f"{start_hour + duration_hours:02d}:{start_minute:02d}"
     
     placeholders = ','.join(['?'] * len(item_ids))
     
