@@ -34,7 +34,7 @@ class WorkspaceRecommendation(BaseModel):
 
 class FinalResponse(BaseModel):
     """The strict JSON output the AI must return to the frontend"""
-    agent_messge: str = Field(description="A brief conversational reply summarizing the findings or explaining compromises")
+    agent_message: str = Field(description="A brief conversational reply summarizing the findings or explaining compromises")
     recommendations: List[WorkspaceRecommendation] = Field(default_factory=list, description="List of available spaces. Must be empty if none are available.")
         
         

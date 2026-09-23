@@ -181,7 +181,7 @@
             `;
 
             // 2. Add the conversational text and parse the Markdown
-            const rawText = data.agent_message || data.agent_messge || "";
+            const rawText = data.agent_message || "";
             const parsedHTML = marked.parse(rawText);
 
             // Use Tailwind's 'prose' classes to style the injected HTML beautifully
